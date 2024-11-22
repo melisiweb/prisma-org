@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["typedSql"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Team {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  department  String
+  parentId    String?    @db.Uuid @map("parent_id")
+  parent      Team?      @relation("team", fields: [parentId], references: [id])
+  children    Team[]     @relation("team")
+  members     TeamMember[]
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at") 
+
+  @@index([parentId])
+  @@index([department])
+  @@map("team")
+}
+
+model User {
+  id        String      @id @default(uuid()) @db.Uuid
+  email     String      @unique
+  name      String
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  
+  teams     TeamMember[]
+
+  @@index([email])
+  @@map("user")
+}
+
+model TeamMember {
+  id        String    @id @default(uuid()) @db.Uuid
+  teamId    String    @db.Uuid @map("team_id")
+  userId    String    @db.Uuid @map("user_id")
+  role      TeamMemberRole
+  active    Boolean   @default(true)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  team      Team      @relation(fields: [teamId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_member")
+}
+
+enum TeamMemberRole {
+  PRINCIPLE_ENGINEER
+  STAFF_ENGINEER
+  SENIOR_ENGINEER
+  JUNIOR_ENGINEER
+  DESIGNER
+  PM
+  EM
+}
